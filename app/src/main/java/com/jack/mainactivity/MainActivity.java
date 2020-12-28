@@ -34,6 +34,7 @@ import android.widget.Toast;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -67,23 +68,18 @@ public class MainActivity extends AppCompatActivity {
     private String cameraId;
     protected CameraDevice cameraDevice;
     protected CameraCaptureSession cameraCaptureSessions;
-    protected CaptureRequest captureRequest;
     protected CaptureRequest.Builder captureRequestBuilder;
     private Size imageDimension;
     private ImageReader imageReader;
-    private File file;
     private static final int REQUEST_CAMERA_PERMISSION = 200;
-    private boolean mFlashSupported;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
     private ServerSocket serverSocket;
     private Socket clientSocket;
 
     String port = "10001";
-    boolean isConnected = true;
-    String message;
-    DataInputStream is;
-    DataOutputStream os;
+    InputStream is;
+    OutputStream os;
 
 
     @Override
@@ -98,7 +94,15 @@ public class MainActivity extends AppCompatActivity {
         takePictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                takePicture();
+                final File file = new File(Environment.getExternalStorageDirectory() + "/pic.jpg");
+
+                try{
+                    takePicture(new FileOutputStream(file));
+                }
+                catch (FileNotFoundException e){
+
+                }
+
             }
         });
 
@@ -157,7 +161,6 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
             super.onCaptureCompleted(session, request, result);
-            Toast.makeText(MainActivity.this, "Saved:" + file, Toast.LENGTH_SHORT).show();
             createCameraPreview();
         }
     };
@@ -179,24 +182,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected void takePicture() {
+    protected void takePicture(OutputStream os) {
         if (null == cameraDevice) {
             Log.e(TAG, "cameraDevice is null");
             return;
         }
         CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
-            CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraDevice.getId());
-            Size[] jpegSizes = null;
-            if (characteristics != null) {
-                jpegSizes = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
-            }
             int width = 640;
             int height = 480;
-            if (jpegSizes != null && 0 < jpegSizes.length) {
-                width = jpegSizes[0].getWidth();
-                height = jpegSizes[0].getHeight();
-            }
+
+            //                                                         TODO : RGB888
             ImageReader reader = ImageReader.newInstance(width, height, ImageFormat.JPEG, 1);
             List<Surface> outputSurfaces = new ArrayList<Surface>(2);
             outputSurfaces.add(reader.getSurface());
@@ -207,7 +203,6 @@ public class MainActivity extends AppCompatActivity {
             // Orientation
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
-            final File file = new File(Environment.getExternalStorageDirectory() + "/pic.jpg");
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader reader) {
@@ -230,14 +225,12 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 private void save(byte[] bytes) throws IOException {
-                    OutputStream output = null;
                     try {
-                        output = new FileOutputStream(file);
-                        output.write(bytes);
+                        System.out.println("Size : "+bytes.length);
+                        os.write(bytes);
+                        os.flush();
                     } finally {
-                        if (null != output) {
-                            output.close();
-                        }
+
                     }
                 }
             };
@@ -246,7 +239,6 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
                     super.onCaptureCompleted(session, request, result);
-                    Toast.makeText(MainActivity.this, "Saved:" + file, Toast.LENGTH_SHORT).show();
                     createCameraPreview();
                 }
             };
@@ -279,8 +271,8 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     serverSocket = new ServerSocket(Integer.parseInt(port));
                     clientSocket = serverSocket.accept();
-                    is = new DataInputStream(clientSocket.getInputStream());
-                    os = new DataOutputStream(clientSocket.getOutputStream());
+                    is = clientSocket.getInputStream();
+                    os = clientSocket.getOutputStream();
 
                     runOnUiThread(new Runnable() {
                         public void run() {
@@ -295,9 +287,7 @@ public class MainActivity extends AppCompatActivity {
                         int readCount = is.read(bytes);
                         String recv_msg = new String(bytes, 0, readCount, "UTF-8");
                         System.out.println("count : "+readCount+", message : "+recv_msg);
-                        os.writeUTF("RGBBB");
-                        os.flush();
-
+                        takePicture(os);
                     }
 
                 } catch (Exception e) {
