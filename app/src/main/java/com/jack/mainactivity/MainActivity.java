@@ -31,6 +31,13 @@ import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
+
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -40,10 +47,13 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "AndroidCameraApi";
     private Button takePictureButton;
+    private Button startServerButton;
     private TextureView textureView;
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
@@ -66,6 +76,15 @@ public class MainActivity extends AppCompatActivity {
     private boolean mFlashSupported;
     private Handler mBackgroundHandler;
     private HandlerThread mBackgroundThread;
+    private ServerSocket serverSocket;
+    private Socket clientSocket;
+
+    String port = "10001";
+    boolean isConnected = true;
+    String message;
+    DataInputStream is;
+    DataOutputStream os;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +99,15 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 takePicture();
+            }
+        });
+
+        startServerButton = (Button) findViewById(R.id.btn_init_server);
+        assert startServerButton != null;
+        startServerButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startServer();
             }
         });
     }
@@ -240,6 +268,47 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+
+    void startServer(){
+
+        Toast.makeText(MainActivity.this, "Start server", Toast.LENGTH_SHORT).show();
+        System.out.println("START SERVER");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    serverSocket = new ServerSocket(Integer.parseInt(port));
+                    clientSocket = serverSocket.accept();
+                    is = new DataInputStream(clientSocket.getInputStream());
+                    os = new DataOutputStream(clientSocket.getOutputStream());
+
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(MainActivity.this, "Connected With IP : "+clientSocket.getRemoteSocketAddress(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                    byte[] bytes = new byte[3];
+
+                    while(true){
+                        System.out.println("READING...");
+                        int readCount = is.read(bytes);
+                        String recv_msg = new String(bytes, 0, readCount, "UTF-8");
+                        System.out.println("count : "+readCount+", message : "+recv_msg);
+                        os.writeUTF("RGBBB");
+                        os.flush();
+
+                    }
+
+                } catch (Exception e) {
+                    System.out.println(e);
+                    e.printStackTrace();
+                }
+            }//run method...
+        }).start(); //Thread 실행..
+
+    }
+
 
     protected void createCameraPreview() {
         try {
