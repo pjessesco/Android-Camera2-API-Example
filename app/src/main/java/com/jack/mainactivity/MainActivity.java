@@ -211,6 +211,8 @@ public class MainActivity extends AppCompatActivity {
             // Enable auto white balances TODO : fix to specific value
             captureBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO);
 
+            captureBuilder.set(CaptureRequest.JPEG_QUALITY, (byte)100);
+
             // Orientation
             int rotation = getWindowManager().getDefaultDisplay().getRotation();
             captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, ORIENTATIONS.get(rotation));
