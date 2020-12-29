@@ -31,7 +31,11 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import org.w3c.dom.Text;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -57,6 +61,11 @@ public class MainActivity extends AppCompatActivity {
     private Button takePictureButton;
     private Button startServerButton;
     private TextureView textureView;
+    private SeekBar exposureTimeBar;
+    private TextView exposureTimeText;
+    private SeekBar isoBar;
+    private TextView isoText;
+
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 
     static {
@@ -116,7 +125,54 @@ public class MainActivity extends AppCompatActivity {
                 startServer();
             }
         });
+
+        exposureTimeText = (TextView) findViewById(R.id.text_exposure_time4);
+        exposureTimeBar = (SeekBar)findViewById(R.id.bar_exposure_time);
+        exposureTimeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                exposureTimeText.setText("onStop TrackingTouch");
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                exposureTimeText.setText("onStart TrackingTouch");
+            }
+
+            public void onProgressChanged(SeekBar seekBar, int progress,
+                                          boolean fromUser) {
+                exposureTimeText.setText("onProgressChanged : " + progress);
+            }
+        });
+
+        isoText = (TextView) findViewById(R.id.text_ISO);
+        isoBar = (SeekBar)findViewById(R.id.bar_ISO);
+        isoBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                isoText.setText("onStop TrackingTouch");
+            }
+
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                isoText.setText("onStart TrackingTouch");
+            }
+
+            public void onProgressChanged(SeekBar seekBar, int progress,
+                                          boolean fromUser) {
+                isoText.setText("onProgressChanged : " + progress);
+            }
+        });
+
+
+
+
     }
+
+    void setISO(){
+
+    }
+
+    void setExposureTime(){
+
+    }
+
 
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
         @Override
@@ -184,12 +240,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    protected void takePicture(OutputStream os) {
+    protected void takePicture(final OutputStream os) {
         if (null == cameraDevice) {
             Log.e(TAG, "cameraDevice is null");
             return;
         }
-        CameraManager manager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try {
             int width = 640;
             int height = 480;
