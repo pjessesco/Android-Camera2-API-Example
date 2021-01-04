@@ -246,6 +246,10 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    protected void takeDepth(final OutputStream os){
+
+    }
+
     protected void takePicture(final OutputStream os) {
         if (null == cameraDevice) {
             Log.e(TAG, "cameraDevice is null");
