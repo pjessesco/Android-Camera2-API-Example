@@ -91,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
     InputStream is;
     OutputStream os;
 
+    long exposureTime = 8000000L;
+    int ISO = 64;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,36 +130,46 @@ public class MainActivity extends AppCompatActivity {
         });
 
         exposureTimeText = (TextView) findViewById(R.id.text_exposure_time4);
+        exposureTimeText.setText(String.valueOf(exposureTime));
         exposureTimeBar = (SeekBar)findViewById(R.id.bar_exposure_time);
+        // exposure time range : [85000, 100000000] in Galaxy note 10+
+        // https://developer.android.com/reference/android/hardware/camera2/CameraCharacteristics#SENSOR_INFO_EXPOSURE_TIME_RANGE
+        exposureTimeBar.setMin(85000);
+        exposureTimeBar.setMax(10000000);
+        exposureTimeBar.setProgress((int)exposureTime);
         exposureTimeBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onStopTrackingTouch(SeekBar seekBar) {
-                exposureTimeText.setText("onStop TrackingTouch");
             }
 
             public void onStartTrackingTouch(SeekBar seekBar) {
-                exposureTimeText.setText("onStart TrackingTouch");
             }
 
             public void onProgressChanged(SeekBar seekBar, int progress,
                                           boolean fromUser) {
-                exposureTimeText.setText("onProgressChanged : " + progress);
+                exposureTimeText.setText(String.valueOf(progress));
+                exposureTime = progress;
             }
         });
 
         isoText = (TextView) findViewById(R.id.text_ISO);
+        isoText.setText(String.valueOf(ISO));
         isoBar = (SeekBar)findViewById(R.id.bar_ISO);
+        // sensitivity range : [50, 3200] in Galaxy note 10+
+        // https://developer.android.com/reference/android/hardware/camera2/CameraCharacteristics#SENSOR_INFO_SENSITIVITY_RANGE
+        isoBar.setMax(3200);
+        isoBar.setMin(50);
+        isoBar.setProgress(ISO);
         isoBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onStopTrackingTouch(SeekBar seekBar) {
-                isoText.setText("onStop TrackingTouch");
             }
 
             public void onStartTrackingTouch(SeekBar seekBar) {
-                isoText.setText("onStart TrackingTouch");
             }
 
             public void onProgressChanged(SeekBar seekBar, int progress,
                                           boolean fromUser) {
-                isoText.setText("onProgressChanged : " + progress);
+                isoText.setText(String.valueOf(progress));
+                ISO = progress;
             }
         });
 
@@ -165,13 +178,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    void setISO(){
-
-    }
-
-    void setExposureTime(){
-
-    }
 
 
     TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
@@ -261,8 +267,8 @@ public class MainActivity extends AppCompatActivity {
             captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CameraMetadata.CONTROL_AF_MODE_AUTO);
             // Disable auto exposure and set as specific value, refer to PRO mode in default camera app.
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE, CameraMetadata.CONTROL_AE_MODE_OFF);
-            captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, 5555555L); // exposure time range : [85000, 100000000] //
-            captureBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, 50); // sensitivity range : [50, 3200], == iso
+            captureBuilder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, exposureTime); // exposure time range : [85000, 100000000] //
+            captureBuilder.set(CaptureRequest.SENSOR_SENSITIVITY, ISO); //
             // Enable auto white balances TODO : fix to specific value
             captureBuilder.set(CaptureRequest.CONTROL_AWB_MODE, CameraMetadata.CONTROL_AWB_MODE_AUTO);
 
